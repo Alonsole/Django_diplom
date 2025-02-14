@@ -27,7 +27,7 @@ PostgreSQL
 ....
 
 ### Документация
-....
+[Прочитайте документацию](https://github.com/Alonsole/Django_diplom/blob/main/Documentation.md)
 
 ### Лицензия
 Это учебный проект вне коммерческих целей.
