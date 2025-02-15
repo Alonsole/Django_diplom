@@ -22,6 +22,8 @@ from .serializers import UserSerializer, CategorySerializer, ShopSerializer, Pro
     OrderItemSerializer, OrderSerializer, ContactSerializer
 from .signals import new_order
 
+import yaml
+
 
 class RegisterAccount(APIView):
     """
@@ -737,3 +739,59 @@ class OrderView(APIView):
                         return JsonResponse({'Status': True})
 
         return JsonResponse({'Status': False, 'Errors': 'Не указаны все необходимые аргументы'})
+
+
+
+class ProductExport(APIView):
+       def get(self, request, shop_name, format=None):
+           # Проверка доступа
+           if not request.user.is_authenticated or request.user.type != 'shop':
+               return Response({'Status': False, 'Error': 'Доступ запрещен'}, status=403)
+
+           # Получаем информацию о магазине и товарах. Если магазина нет, вернуть ошибку 404
+           try:
+               shop = Shop.objects.get(name=shop_name)
+           except Shop.DoesNotExist:
+               return Response({'Status': False, 'Error': 'Магазин не найден'}, status=404)
+
+           products = ProductInfo.objects.filter(shop=shop)
+
+           # Формируем структуру данных для экспорта
+           export_data = {'shop': shop.name, 'categories': [], 'goods': []}
+
+           categories = set()  # Хранение уникальных категорий
+           goods = []
+
+           for product in products:
+               # Добавляем категорию товара, если она еще не была добавлена
+               category = product.product.category
+               if category not in categories:
+                   categories.add(category)
+                   export_data['categories'].append({
+                       'id': category.id,
+                       'name': category.name
+                   })
+               
+               # Собираем информацию о товаре
+               parameters = {}
+               for param in product.product_parameters.all():
+                   parameters[param.parameter.name] = param.value
+               
+               goods.append({
+                   'id': product.external_id,
+                   'name': product.product.name,
+                   'model': product.model,
+                   'price': float(product.price),
+                   'price_rrc': float(product.price_rrc),
+                   'quantity': int(product.quantity),
+                   'category': product.product.category.id,
+                   'parameters': parameters
+               })
+
+           export_data['goods'] = goods
+
+           # Данные в YAML (потребуется библиотека)
+           yaml_data = yaml.dump(export_data)
+
+           # Возвращаем YAML результат
+           return Response(yaml_data, content_type='application/x-yaml')
