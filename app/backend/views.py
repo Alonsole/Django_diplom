@@ -791,7 +791,7 @@ class ProductExport(APIView):
            export_data['goods'] = goods
 
            # Данные в YAML (потребуется библиотека)
-           yaml_data = yaml.dump(export_data)
+           yaml_data = yaml.dump(export_data, allow_unicode=True)
 
-           # Возвращаем YAML результат
-           return Response(yaml_data, content_type='application/x-yaml')
+           # Возвращаем результат в формате YAML
+           return Response(yaml_data, content_type='application/x-yaml; charset=UTF-8')
