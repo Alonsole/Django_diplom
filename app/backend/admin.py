@@ -1,9 +1,11 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
-from .models import User, Shop, Category, Product, ProductInfo, Parameter, ProductParameter, Order, OrderItem, \
-    Contact, ConfirmEmailToken
+from .models import User, Shop, Category, Product, ProductInfo, Parameter, ProductParameter, OrderItem, \
+    Contact, ConfirmEmailToken, Order
+from django.db.models import Sum, F
 
+from .signals import new_order_signal
 
 
 @admin.register(User)
@@ -56,7 +58,72 @@ class ProductParameterAdmin(admin.ModelAdmin):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    pass
+    """list_display: Определяет столбцы, которые будут видны в списке заказов.
+       list_filter: Позволяет фильтровать список заказов по полю `state` (статус заказа).
+       actions: Список действий, которые могут быть выполнены над группой заказов.
+    """
+    list_display = ['id', 'user', 'state', 'dt', 'contact', 'get_total_sum', 'get_items']
+    list_filter = ['state']
+    actions = ['set_status_confirmed',
+               'set_status_assembled',
+               'set_status_sent',
+               'set_status_delivered',
+               'set_status_canceled']
+
+    def get_total_sum(self, obj):
+        return obj.ordered_items.aggregate(
+            total=Sum(F('quantity') * F('product_info__price'))
+        )['total']
+
+    get_total_sum.short_description = 'Общая стоимость'
+
+    def get_items(self, obj):
+        return ", ".join([
+            f"{item.product_info.product.name} (x{item.quantity})"
+            for item in obj.ordered_items.all()
+        ])
+
+    get_items.short_description = 'Товары'
+
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        return queryset.prefetch_related('ordered_items__product_info__product')
+
+    """
+    Методы `set_status_...` предназначены для выполнения соответствующих действий над выбранной группой заказов
+    """
+
+    def set_status_confirmed(self, request, queryset):
+        self._set_status_and_notify(queryset, 'подтвержденный')
+
+    set_status_confirmed.short_description = "Установить статус «Подтверждён»"
+
+    def set_status_assembled(self, request, queryset):
+        self._set_status_and_notify(queryset, 'собранный')
+
+    set_status_assembled.short_description = "Установить статус «Собран»"
+
+    def set_status_sent(self, request, queryset):
+        self._set_status_and_notify(queryset, 'отправленный')
+
+    set_status_sent.short_description = "Установить статус «Отправлен»"
+
+    def set_status_delivered(self, request, queryset):
+        self._set_status_and_notify(queryset, 'доставленный')
+
+    set_status_delivered.short_description = "Установить статус «Доставлен»"
+
+    def set_status_canceled(self, request, queryset):
+        self._set_status_and_notify(queryset, 'отмененный')
+
+    set_status_canceled.short_description = "Установить статус «Отменён»"
+
+    def _set_status_and_notify(self, queryset, status, request):
+        for order in queryset:
+            order.state = status
+            order.save()
+            new_order_signal(order.user.id, order_id=order.id, status=status)
+        self.message_user(request, f"{queryset.count()} заказов были обновлены до статуса {status}.")
 
 
 @admin.register(OrderItem)
