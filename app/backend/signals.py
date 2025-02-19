@@ -1,5 +1,6 @@
 from typing import Type
 
+from celery import shared_task
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 from django.db.models.signals import post_save
@@ -13,28 +14,46 @@ new_user_registered = Signal()
 new_order = Signal()
 
 
-@receiver(reset_password_token_created)
-def password_reset_token_created(sender, instance, reset_password_token, **kwargs):
+@shared_task
+def send_password_reset_token_email(user_email, token_key):
     """
     Отправляем письмо с токеном для сброса пароля
-    When a token is created, an e-mail needs to be sent to the user
-    :param sender: View Class that sent the signal
-    :param instance: View Instance that sent the signal
-    :param reset_password_token: Token Model Object
-    :param kwargs:
-    :return:
     """
-    # send an e-mail to the user
-
     msg = EmailMultiAlternatives(
         # title:
-        f"Password Reset Token for {reset_password_token.user}",
+        f"Password Reset Token for {user_email}",
         # message:
-        reset_password_token.key,
+        token_key,
         # from:
         settings.EMAIL_HOST_USER,
         # to:
-        [reset_password_token.user.email]
+        [user_email]
+    )
+    msg.send()
+
+
+@receiver(reset_password_token_created)
+def password_reset_token_created(sender, instance, reset_password_token, **kwargs):
+    """
+    Запускаем асинхронную задачу для отправки письма с токеном для сброса пароля
+    """
+    send_password_reset_token_email.delay(reset_password_token.user.email, reset_password_token.key)
+
+
+@shared_task
+def send_confirmation_email(user_email, token_key):
+    """
+    Отправляем письмо с подтверждением почты
+    """
+    msg = EmailMultiAlternatives(
+        # title:
+        f"Email Confirmation Token for {user_email}",
+        # message:
+        token_key,
+        # from:
+        settings.EMAIL_HOST_USER,
+        # to:
+        [user_email]
     )
     msg.send()
 
@@ -42,38 +61,54 @@ def password_reset_token_created(sender, instance, reset_password_token, **kwarg
 @receiver(post_save, sender=User)
 def new_user_registered_signal(sender: Type[User], instance: User, created: bool, **kwargs):
     """
-     отправляем письмо с подтрердждением почты
+    Запускаем асинхронную задачу для отправки письма с подтверждением почты
     """
     if created and not instance.is_active:
-        # send an e-mail to the user
         token, _ = ConfirmEmailToken.objects.get_or_create(user_id=instance.pk)
-
-        msg = EmailMultiAlternatives(
-            # title:
-            f"Password Reset Token for {instance.email}",
-            # message:
-            token.key,
-            # from:
-            settings.EMAIL_HOST_USER,
-            # to:
-            [instance.email]
-        )
-        msg.send()
+        send_confirmation_email.delay(instance.email, token.key)
 
 
-@receiver(new_order)
-def new_order_signal(user_id, **kwargs):
+@shared_task
+def send_order_email(user_id, order_id, status):
     """
-    отправяем письмо при изменении статуса заказа
+    Отправляем письмо при изменении статуса заказа
     """
-    # send an e-mail to the user
+    user = User.objects.get(id=user_id)
+    order = Order.objects.get(id=order_id)
+
+    status_messages = {
+        'новый': 'Новый заказ создан',
+        'подтвержденный': 'Заказ подтвержден',
+        'собранный': 'Заказ собран',
+        'отправленный': 'Заказ отправлен',
+        'доставленный': 'Заказ доставлен',
+        'отмененный': 'Заказ отменен'
+    }
+
+    subject = f"Обновление статуса заказа №{order.id}"
+    message = status_messages.get(status, 'Статус заказа изменен')
+
+    msg = EmailMultiAlternatives(
+        subject,
+        message,
+        settings.EMAIL_HOST_USER,
+        [user.email]
+    )
+    msg.send()
+
+
+@shared_task
+def new_order_signal(user_id, order_id, status):
+    """
+    Отправляем письмо при изменении статуса заказа
+    """
     user = User.objects.get(id=user_id)
 
     msg = EmailMultiAlternatives(
         # title:
-        f"Обновление статуса заказа",
+        f"Обновление статуса заказа {order_id}",
         # message:
-        'Заказ сформирован',
+        f'Статус вашего заказа №{order_id} изменен на "{status}"',
         # from:
         settings.EMAIL_HOST_USER,
         # to:
