@@ -94,27 +94,27 @@ class OrderAdmin(admin.ModelAdmin):
     """
 
     def set_status_confirmed(self, request, queryset):
-        self._set_status_and_notify(queryset, 'подтвержденный')
+        self._set_status_and_notify(queryset, 'подтвержденный', request)
 
     set_status_confirmed.short_description = "Установить статус «Подтверждён»"
 
     def set_status_assembled(self, request, queryset):
-        self._set_status_and_notify(queryset, 'собранный')
+        self._set_status_and_notify(queryset, 'собранный', request)
 
     set_status_assembled.short_description = "Установить статус «Собран»"
 
     def set_status_sent(self, request, queryset):
-        self._set_status_and_notify(queryset, 'отправленный')
+        self._set_status_and_notify(queryset, 'отправленный', request)
 
     set_status_sent.short_description = "Установить статус «Отправлен»"
 
     def set_status_delivered(self, request, queryset):
-        self._set_status_and_notify(queryset, 'доставленный')
+        self._set_status_and_notify(queryset, 'доставленный', request)
 
     set_status_delivered.short_description = "Установить статус «Доставлен»"
 
     def set_status_canceled(self, request, queryset):
-        self._set_status_and_notify(queryset, 'отмененный')
+        self._set_status_and_notify(queryset, 'отмененный', request)
 
     set_status_canceled.short_description = "Установить статус «Отменён»"
 
