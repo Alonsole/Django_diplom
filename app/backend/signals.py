@@ -72,46 +72,24 @@ def new_user_registered_signal(sender: Type[User], instance: User, created: bool
 def send_order_email(user_id, order_id, status):
     """
     Отправляем письмо при изменении статуса заказа
+    Словарь для преобразования статуса заказа в текстовое сообщение на русском языке
     """
     user = User.objects.get(id=user_id)
     order = Order.objects.get(id=order_id)
 
-    status_messages = {
-        'новый': 'Новый заказ создан',
-        'подтвержденный': 'Заказ подтвержден',
-        'собранный': 'Заказ собран',
-        'отправленный': 'Заказ отправлен',
-        'доставленный': 'Заказ доставлен',
-        'отмененный': 'Заказ отменен'
-    }
+    status_messages = {'confirmed': 'Подтвержден',
+                       'assembled': 'Собран',
+                       'sent': 'Отправлен',
+                       'delivered': 'Доставлен',
+                       'canceled': 'Отменен'}
 
-    subject = f"Обновление статуса заказа №{order.id}"
-    message = status_messages.get(status, 'Статус заказа изменен')
+    subject = f"Обновление статуса заказа №{order.id}"  # Тема сообщения
+    message = f'Статус вашего заказа №{order_id} изменен на "{status_messages[status]}"'  # Текст сообщения
 
     msg = EmailMultiAlternatives(
         subject,
         message,
         settings.EMAIL_HOST_USER,
-        [user.email]
-    )
-    msg.send()
-
-
-@shared_task
-def new_order_signal(user_id, order_id, status):
-    """
-    Отправляем письмо при изменении статуса заказа
-    """
-    user = User.objects.get(id=user_id)
-
-    msg = EmailMultiAlternatives(
-        # title:
-        f"Обновление статуса заказа {order_id}",
-        # message:
-        f'Статус вашего заказа №{order_id} изменен на "{status}"',
-        # from:
-        settings.EMAIL_HOST_USER,
-        # to:
         [user.email]
     )
     msg.send()
