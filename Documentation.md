@@ -14,5 +14,29 @@ POSTGRES_PORT='port'
 6. createdb diplom_db
 7. docker-compose exec web python manage.py migrate
 8. docker-compose exec web python manage.py createsuperuser
+- Необходимые Docker file настроены!
+  
+## Структура проекта
 
+- `app/`: Основной код приложения
+  - `backend/`: Логика backend'а
+ - `models.py`: Модели данных
+ - `views.py`: Представления API
+ - `serializers.py`: Сериализаторы для API
+ - `urls.py`: URL-маршруты
+  - `netology_pd_diplom/`: Настройки проекта
+ - `settings.py`: Настройки Django
+ - `celery_app.py`: Настройки Celery
+- `nginx/`: Конфигурация Nginx
+- `docker-compose.yml`: Конфигурация Docker
 
+## API Endpoints
+
+- `/api/user/register/` (POST): Регистрация нового пользователя
+- `/api/user/login/` (POST): Вход пользователя
+- `/api/user/confirm/` (POST): Подтверждение email пользователя
+- `/api/shop/` (GET): Получение списка магазинов
+- `/api/categories/` (GET): Получение списка категорий
+- `/api/products/` (GET): Получение списка продуктов
+- `/api/basket/` (GET, POST, PUT, DELETE): Управление корзиной пользователя
+- `/api/order/` (GET, POST, PUT): Управление заказами
