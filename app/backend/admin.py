@@ -5,7 +5,7 @@ from .models import User, Shop, Category, Product, ProductInfo, Parameter, Produ
     Contact, ConfirmEmailToken, Order
 from django.db.models import Sum, F
 
-from .signals import new_order_signal
+from .signals import send_order_email
 
 
 @admin.register(User)
@@ -94,27 +94,27 @@ class OrderAdmin(admin.ModelAdmin):
     """
 
     def set_status_confirmed(self, request, queryset):
-        self._set_status_and_notify(queryset, 'подтвержденный', request)
+        self._set_status_and_notify(queryset, 'confirmed', request)
 
     set_status_confirmed.short_description = "Установить статус «Подтверждён»"
 
     def set_status_assembled(self, request, queryset):
-        self._set_status_and_notify(queryset, 'собранный', request)
+        self._set_status_and_notify(queryset, 'assembled', request)
 
     set_status_assembled.short_description = "Установить статус «Собран»"
 
     def set_status_sent(self, request, queryset):
-        self._set_status_and_notify(queryset, 'отправленный', request)
+        self._set_status_and_notify(queryset, 'sent', request)
 
     set_status_sent.short_description = "Установить статус «Отправлен»"
 
     def set_status_delivered(self, request, queryset):
-        self._set_status_and_notify(queryset, 'доставленный', request)
+        self._set_status_and_notify(queryset, 'delivered', request)
 
     set_status_delivered.short_description = "Установить статус «Доставлен»"
 
     def set_status_canceled(self, request, queryset):
-        self._set_status_and_notify(queryset, 'отмененный', request)
+        self._set_status_and_notify(queryset, 'canceled', request)
 
     set_status_canceled.short_description = "Установить статус «Отменён»"
 
@@ -122,7 +122,7 @@ class OrderAdmin(admin.ModelAdmin):
         for order in queryset:
             order.state = status
             order.save()
-            new_order_signal(order.user.id, order_id=order.id, status=status)
+            send_order_email(order.user.id, order_id=order.id, status=status)
         self.message_user(request, f"{queryset.count()} заказов были обновлены до статуса {status}.")
 
 
