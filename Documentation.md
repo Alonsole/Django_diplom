@@ -3,8 +3,6 @@
 git clone git@github.com:Alonsole/Django_diplom.git
 ```
 
-
-
 ### Инструкция по запуску приложения:
 1. Создать и настроить .env по пути ./app/.env
 - Образец env файла предоставлен в проекте. 
@@ -14,6 +12,9 @@ SECRET_KEY='SECRET_KEY'
 DJANGO_ALLOWED_HOSTS=localhost 127.0.0.1 [::1]
 POSTGRES_PASSWORD='password'
 POSTGRES_PORT='port'
+E_Password='Пароль для почты'
+Email='Почтовый адрес для отправки писем'
+TestMail='Адрес для отправки тестового письма Celery'
 ```
 2. docker-compose build
 3. docker-compose up -d
