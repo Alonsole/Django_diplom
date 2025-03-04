@@ -10,3 +10,4 @@ python-dotenv>=1.0.1
 gunicorn==21.2.0
 celery>=5.3.6
 redis>=5.2.1
+django-baton==4.2.2
