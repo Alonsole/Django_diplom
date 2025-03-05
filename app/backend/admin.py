@@ -10,20 +10,26 @@ from .signals import send_order_email
 
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
-    """
-    Панель управления пользователями
-    """
-    model = User
+    list_display = ('email', 'first_name', 'last_name', 'is_staff', 'type')
+    list_filter = ('is_staff', 'is_superuser', 'is_active', 'type')
+    search_fields = ('email', 'first_name', 'last_name')
+    ordering = ('email',)
 
     fieldsets = (
-        (None, {'fields': ('email', 'password', 'type')}),
+        (None, {'fields': ('email', 'password')}),
         ('Personal info', {'fields': ('first_name', 'last_name', 'company', 'position')}),
-        ('Permissions', {
-            'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions'),
-        }),
+        ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'type', 'groups', 'user_permissions')}),
         ('Important dates', {'fields': ('last_login', 'date_joined')}),
     )
-    list_display = ('email', 'first_name', 'last_name', 'is_staff')
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': ('email', 'password1', 'password2'),
+        }),
+    )
+
+    # Добавьте эту строку для использования Baton
+    change_form_template = 'baton/change_form.html'
 
 
 @admin.register(Shop)
