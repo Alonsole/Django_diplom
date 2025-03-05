@@ -11,3 +11,4 @@ gunicorn==21.2.0
 celery>=5.3.6
 redis>=5.2.1
 django-baton==4.2.2
+pytest-django==4.10.0
