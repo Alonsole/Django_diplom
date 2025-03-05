@@ -20,9 +20,10 @@ TestMail='Адрес для отправки тестового письма Cel
 3. docker-compose up -d
 4. docker exec -it "Container ID db-1" bash
 5. su - postgres
-6. createdb diplom_db
-  6.1. exit (выйти из контенера)
-8. docker-compose exec web python manage.py migrate
+6. createdb diplom_db  
+  6.1. exit  
+   6.2. exit (выйти из контенера)   
+8. docker-compose exec web python manage.py migrate  
 9. docker-compose exec web python manage.py createsuperuser
 - Необходимые Docker file настроены!
 10. Проверьте запуск контейнеров и перейдите по адресу http://localhost/admin/
@@ -77,3 +78,7 @@ TestMail='Адрес для отправки тестового письма Cel
 Отправка уведомлений по событиям  
 9. `admin.py`:  
 Административная панель проекта  
+
+### Работа с тестированием Pytest
+1. docker exec -it "Container ID web-1" bash
+2. pytest
